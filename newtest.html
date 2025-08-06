@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ottimate ROI Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #374151;
+        }
+        .input-group input {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            color: #1f2937;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+        }
+        .result-item {
+            display: flex;
+            flex-direction: column;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #e5e7eb;
+            position: relative; /* Needed for absolute positioning of tooltip */
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-label {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 0.25rem;
+            align-items: center; /* Align text and icon vertically */
+        }
+        .result-label span:first-child {
+            color: #4b5563;
+        }
+        .result-label .value-and-icon { /* New class for grouping value and icon */
+            display: flex;
+            align-items: center;
+            gap: 0.5rem; /* Space between value and icon */
+        }
+        .result-label .value-and-icon span:first-child { /* The actual value span */
+            font-weight: 600;
+            color: #1f2937;
+            text-align: right; /* Ensure the value itself is right-aligned */
+            min-width: 80px; /* Give it a minimum width for consistent alignment */
+        }
+        .result-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-left: 0.5rem;
+            margin-top: 0.25rem;
+        }
+        .info-icon {
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border: 1px solid #d1d5db;
+            border-radius: 50%;
+            background-color: #f9fafb;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .info-icon:hover {
+            background-color: #e0e7ff;
+            color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        .formula-tooltip {
+            position: absolute;
+            background-color: #334155; /* Dark background for contrast */
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 10; /* Ensure it's above other content */
+            display: none; /* Hidden by default */
+            width: max-content;
+            max-width: 400px; /* Limit width for readability */
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 0.5rem; /* Space below the trigger */
+            font-size: 0.75rem;
+            line-height: 1.2;
+            font-family: monospace;
+            white-space: pre-wrap; /* Preserve white space and wrap text */
+            text-align: left;
+        }
+        .result-sub-item {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+            padding-left: 0.5rem;
+            border-left: 2px solid #a78bfa;
+        }
+        .result-sub-item .result-label {
+            font-size: 0.9rem;
+            color: #4c5563;
+        }
+        .result-sub-item .result-label .value-and-icon span:first-child { /* Specific for sub-items */
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .result-item.font-bold .result-label .value-and-icon span:first-child {
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+        .result-item.text-blue-600 .result-label .value-and-icon span:first-child {
+            color: #2563eb;
+        }
+        .button-primary {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .button-primary:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+        .button-primary:active {
+            background-color: #1d4ed8;
+            transform: translateY(0);
+        }
+        .button-secondary {
+            background-color: #6b7280;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-left: 1rem; /* Space between primary and secondary button */
+        }
+        .button-secondary:hover {
+            background-color: #4b5563;
+            transform: translateY(-1px);
+        }
+        .button-secondary:active {
+            background-color: #374151;
+            transform: translateY(0);
+        }
+
+
+        /* Two-column layout for main content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        @media (min-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-6 md:p-8">
+    <div class="container">
+        <!-- Replaced h1 with img tag -->
+        <div class="text-center mb-8">
+            <img src="your-image-file.png" alt="Ottimate ROI Calculator" class="mx-auto max-w-full h-auto" style="max-height: 100px;">
+        </div>
+        <div class="main-content">
+            <div>
+                <h2 class="section-title">Input Parameters</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="col-span-1">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Labor & Employee Info</h3>
+                        <div class="space-y-4">
+                            <div class="input-group">
+                                <label for="numEmployeesCurrent" class="block text-sm mb-1">Current Number of AP Employees</label>
+                                <input type="number" id="numEmployeesCurrent" value="13" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="hoursPerWeekAP" class="block text-sm mb-1">Hours per Week (AP)</label>
+                                <input type="number" id="hoursPerWeekAP" value="30" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="hourlyWage" class="block text-sm mb-1">Hourly Wage ($)</label>
+                                <input type="number" id="hourlyWage" value="22.0" step="0.01" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="benefitsRate" class="block text-sm mb-1">Benefits Rate (%)</label>
+                                <input type="number" id="benefitsRate" value="15" step="0.01" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="numManagers" class="block text-sm mb-1">Number of Managers</label>
+                                <input type="number" id="numManagers" value="3" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="managerSalaryYear" class="block text-sm mb-1">Manager Salary (Yearly $)</label>
+                                <input type="number" id="managerSalaryYear" value="65000.0" step="0.01" class="w-full">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-span-1">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Operational Data</h3>
+                        <div class="space-y-4 mb-8">
+                            <div class="input-group">
+                                <label for="numInvoicesMonth" class="block text-sm mb-1">Number of Invoices (Monthly)</label>
+                                <input type="number" id="numInvoicesMonth" value="15000" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="pagesPerInvoice" class="block text-sm mb-1">Pages per Invoice</label>
+                                <input type="number" id="pagesPerInvoice" value="1" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="costPerReamPaper" class="block text-sm mb-1">Cost per Ream of Paper ($)</label>
+                                <input type="number" id="costPerReamPaper" value="8.0" step="0.01" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="monthEndCloseDaysSaved" class="block text-sm mb-1">Month-End Close Days Saved</label>
+                                <input type="number" id="monthEndCloseDaysSaved" value="5" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="auditHoursMonthSaved" class="block text-sm mb-1">Audit Hours Saved (Monthly)</label>
+                                <input type="number" id="auditHoursMonthSaved" value="15" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="approvalMinutesPerInvoiceSaved" class="block text-sm mb-1">Approval Minutes per Invoice Saved</label>
+                                <input type="number" id="approvalMinutesPerInvoiceSaved" value="2" class="w-full">
+                            </div>
+                        </div>
+
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Ottimate Pricing & Efficiency</h3>
+                        <div class="space-y-4">
+                            <div class="input-group">
+                                <label for="ottimateMonthlyCost" class="block text-sm mb-1">Ottimate Monthly Cost ($)</label>
+                                <input type="number" id="ottimateMonthlyCost" value="16500.0" step="0.01" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="ottimateMinutesPerInvoice" class="block text-sm mb-1">Ottimate's Minutes per Invoice</label>
+                                <input type="number" id="ottimateMinutesPerInvoice" value="2" step="0.01" class="w-full">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-8">
+                    <button id="calculateBtn" class="button-primary">Calculate ROI</button>
+                    <button id="downloadCsvBtn" class="button-secondary">Download CSV</button>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="section-title">Calculation Results</h2>
+                <div id="results" class="space-y-2">
+                    <div class="result-item">
+                        <div class="result-label">
+                            <span>Current Annual Labor Cost:</span>
+                            <div class="value-and-icon">
+                                <span id="currentAnnualLaborCost">$0.00</span>
+                                <span class="info-icon" data-formula="(NUM_EMPLOYEES_CURRENT × HOURS_PER_WEEK_AP × HOURLY_WAGE) × (1 + BENEFITS_RATE) × WEEKS_PER_YEAR">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">This represents the total annual cost of your current AP team.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                    <div class="result-item font-bold text-lg">
+                        <div class="result-label">
+                            <span>Total Current Annual Expenditure:</span>
+                            <div class="value-and-icon">
+                                <span id="totalCurrentExpenses">$0.00</span>
+                                <span class="info-icon" data-formula="Current Annual Labor Cost">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">The sum of current labor costs before Ottimate. Note: Annual Paper Costs are now accounted for within Soft Cost Savings.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                    <div class="h-4"></div>
+                     <div class="result-item">
+                        <div class="result-label">
+                            <span>Calculated Employees Retained:</span>
+                            <div class="value-and-icon">
+                                <span id="numEmployeesRetainedDisplay">0</span>
+                                <span class="info-icon" data-formula="CEILING(((NUM_INVOICES_MONTH × OTTIMATE_MINUTES_PER_INVOICE) / 60) / (HOURS_PER_WEEK_AP × WEEKS_PER_YEAR / MONTHS_PER_YEAR))">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">The estimated number of AP employees needed after implementing Ottimate, based on the new efficiency.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">
+                            <span>Ottimate Annual Labor Cost:</span>
+                            <div class="value-and-icon">
+                                <span id="ottimateAnnualLaborCost">$0.00</span>
+                                <span class="info-icon" data-formula="(Calculated Employees Retained × HOURS_PER_WEEK_AP × HOURLY_WAGE) × (1 + BENEFITS_RATE) × WEEKS_PER_YEAR">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">The annual labor cost for the **calculated** reduced AP team after implementing Ottimate.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">
+                            <span>Ottimate Annual Subscription:</span>
+                            <div class="value-and-icon">
+                                <span id="ottimateAnnualSubscription">$0.00</span>
+                                <span class="info-icon" data-formula="OTTIMATE_MONTHLY_COST × MONTHS_PER_YEAR">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">The total yearly cost for the Ottimate software subscription.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                    <div class="result-item font-bold text-lg">
+                        <div class="result-label">
+                            <span>Total Ottimate Annual Cost:</span>
+                            <div class="value-and-icon">
+                                <span id="totalOttimateCost">$0.00</span>
+                                <span class="info-icon" data-formula="Ottimate Annual Labor Cost + Ottimate Annual Subscription">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">The combined annual cost of the retained AP team and the Ottimate subscription.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                    <div class="h-4"></div>
+                    <div class="result-item">
+                        <div class="result-label">
+                            <span>Hard Cost Savings (Headcount Reduction):</span>
+                            <div class="value-and-icon">
+                                <span id="hardCostSavings">$0.00</span>
+                                <span class="info-icon" data-formula="Current Annual Labor Cost - Ottimate Annual Labor Cost">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">Savings achieved by reducing the number of AP employees based on Ottimate's efficiency.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">
+                            <span>Soft Cost Savings (Time & Supplies):</span>
+                            <div class="value-and-icon">
+                                <span id="softCostSavings">$0.00</span>
+                                <span class="info-icon" data-formula="Annual Paper Costs + Manager Savings Annual + AP Team Month-End Close Savings + Approval Time Savings + Audit Prep Savings">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">These are savings from increased efficiency and reduced operational overhead. This explicitly includes:</div>
+                        <div class="result-sub-item">
+                            <div class="result-label">
+                                <span>Annual Paper Costs:</span>
+                                <div class="value-and-icon">
+                                    <span id="subPaperCostAnnual">$0.00</span>
+                                    <span class="info-icon" data-formula="(NUM_INVOICES_MONTH × PAGES_PER_INVOICE / 500) × COST_PER_REAM_PAPER × MONTHS_PER_YEAR">ⓘ</span>
+                                </div>
+                            </div>
+                            <div class="formula-tooltip"></div>
+                        </div>
+                        <div class="result-sub-item">
+                            <div class="result-label">
+                                <span>Manager Month-End Close Savings:</span>
+                                <div class="value-and-icon">
+                                    <span id="subManagerSavingsAnnual">$0.00</span>
+                                    <span class="info-icon" data-formula="NUM_MANAGERS × (MONTH_END_CLOSE_DAYS_SAVED × HOURS_PER_DAY) × (MANAGER_SALARY_YEAR / WEEKS_PER_YEAR / HOURS_PER_WEEK_MANAGER) × MONTHS_PER_YEAR">ⓘ</span>
+                                </div>
+                            </div>
+                            <div class="formula-tooltip"></div>
+                        </div>
+                        <div class="result-sub-item">
+                            <div class="result-label">
+                                <span>AP Team Month-End Close Savings:</span>
+                                <div class="value-and-icon">
+                                    <span id="subRetainedApSavingsAnnual">$0.00</span>
+                                    <span class="info-icon" data-formula="Calculated Employees Retained × (MONTH_END_CLOSE_DAYS_SAVED × HOURS_PER_DAY) × (HOURLY_WAGE × (1 + BENEFITS_RATE)) × MONTHS_PER_YEAR">ⓘ</span>
+                                </div>
+                            </div>
+                            <div class="formula-tooltip"></div>
+                        </div>
+                        <div class="result-sub-item">
+                            <div class="result-label">
+                                <span>Approval Time Savings:</span>
+                                <div class="value-and-icon">
+                                    <span id="subApprovalSavingsAnnual">$0.00</span>
+                                    <span class="info-icon" data-formula="((NUM_INVOICES_MONTH × APPROVAL_MINUTES_PER_INVOICE_SAVED) / 60) × (HOURLY_WAGE × (1 + BENEFITS_RATE)) × MONTHS_PER_YEAR">ⓘ</span>
+                                </div>
+                            </div>
+                            <div class="formula-tooltip"></div>
+                        </div>
+                        <div class="result-sub-item">
+                            <div class="result-label">
+                                <span>Audit Prep Savings:</span>
+                                <div class="value-and-icon">
+                                    <span id="subAuditSavingsAnnual">$0.00</span>
+                                    <span class="info-icon" data-formula="AUDIT_HOURS_MONTH_SAVED × (HOURLY_WAGE × (1 + BENEFITS_RATE)) × MONTHS_PER_YEAR">ⓘ</span>
+                                </div>
+                            </div>
+                            <div class="formula-tooltip"></div>
+                        </div>
+                    </div>
+                    <div class="result-item font-bold text-lg text-blue-600">
+                        <div class="result-label">
+                            <span>Total Quantifiable Annual Savings (ROI):</span>
+                            <div class="value-and-icon">
+                                <span id="totalAnnualSavings">$0.00</span>
+                                <span class="info-icon" data-formula="Current Annual Labor Cost + Soft Cost Savings - Total Ottimate Annual Cost">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">The overall annual financial benefit from implementing Ottimate, combining all hard and soft cost savings, minus the Ottimate subscription cost.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                    <div class="h-4"></div>
+                    <div class="result-item">
+                        <div class="result-label">
+                            <span>Daily Hard Cost of Inaction (Labor):</span>
+                            <div class="value-and-icon">
+                                <span id="dailyHardCostOfInaction">$0.00</span>
+                                <span class="info-icon" data-formula="Hard Cost Savings / (WEEKS_PER_YEAR × DAYS_PER_WEEK)">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">The daily labor cost you incur by *not* implementing Ottimate.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">
+                            <span>Daily Total Cost of Inaction (Hard & Soft):</span>
+                            <div class="value-and-icon">
+                                <span id="dailyTotalCostOfInaction">$0.00</span>
+                                <span class="info-icon" data-formula="Total Quantifiable Annual Savings / (WEEKS_PER_YEAR × DAYS_PER_WEEK)">ⓘ</span>
+                            </div>
+                        </div>
+                        <div class="result-description">The total daily cost you incur by *not* implementing Ottimate, including both labor and operational inefficiencies.</div>
+                        <div class="formula-tooltip"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const calculateBtn = document.getElementById('calculateBtn');
+            const downloadCsvBtn = document.getElementById('downloadCsvBtn'); // Get the new button
+
+            // Function to get input value, defaulting to 0 if invalid
+            function getInputValue(id) {
+                const element = document.getElementById(id);
+                const value = parseFloat(element.value);
+                return isNaN(value) ? 0 : value;
+            }
+
+            // Function to format currency
+            function formatCurrency(value) {
+                return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+
+            // Function to escape CSV fields (handle commas and quotes)
+            function escapeCsvField(field) {
+                if (typeof field === 'number') {
+                    return field; // Numbers don't need escaping unless they contain commas, which currency formatting handles
+                }
+                let str = String(field);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }
+
+            // Global object to store calculated results and formulas for CSV export
+            let calculationData = {};
+
+            function calculateROI() {
+                // ------------------------------------------------------------------------------
+                // INPUTS: Get values from input fields
+                // ------------------------------------------------------------------------------
+                const NUM_EMPLOYEES_CURRENT = getInputValue('numEmployeesCurrent');
+                const HOURS_PER_WEEK_AP = getInputValue('hoursPerWeekAP');
+                const HOURLY_WAGE = getInputValue('hourlyWage');
+                const BENEFITS_RATE = getInputValue('benefitsRate') / 100;
+                const NUM_MANAGERS = getInputValue('numManagers');
+                const MANAGER_SALARY_YEAR = getInputValue('managerSalaryYear');
+
+                const NUM_INVOICES_MONTH = getInputValue('numInvoicesMonth');
+                const PAGES_PER_INVOICE = getInputValue('pagesPerInvoice');
+                const COST_PER_REAM_PAPER = getInputValue('costPerReamPaper');
+                const MONTH_END_CLOSE_DAYS_SAVED = getInputValue('monthEndCloseDaysSaved');
+                const AUDIT_HOURS_MONTH_SAVED = getInputValue('auditHoursMonthSaved');
+                const APPROVAL_MINUTES_PER_INVOICE_SAVED = getInputValue('approvalMinutesPerInvoiceSaved');
+
+                const OTTIMATE_MONTHLY_COST = getInputValue('ottimateMonthlyCost');
+                const OTTIMATE_MINUTES_PER_INVOICE = getInputValue('ottimateMinutesPerInvoice');
+
+                // Store inputs for CSV
+                calculationData = {
+                    'Inputs': {
+                        'Current Number of AP Employees': { value: NUM_EMPLOYEES_CURRENT, description: 'Number of full-time equivalent (FTE) employees currently in Accounts Payable.', formula: 'User Input' },
+                        'Hours per Week (AP)': { value: HOURS_PER_WEEK_AP, description: 'Average hours worked per week by an AP employee.', formula: 'User Input' },
+                        'Hourly Wage ($)': { value: HOURLY_WAGE, description: 'Average hourly wage for an AP employee.', formula: 'User Input' },
+                        'Benefits Rate (%)': { value: BENEFITS_RATE * 100, description: 'Percentage of hourly wage allocated for employee benefits.', formula: 'User Input' },
+                        'Number of Managers': { value: NUM_MANAGERS, description: 'Number of managers involved in AP processes.', formula: 'User Input' },
+                        'Manager Salary (Yearly $)': { value: MANAGER_SALARY_YEAR, description: 'Annual salary of a manager.', formula: 'User Input' },
+                        'Number of Invoices (Monthly)': { value: NUM_INVOICES_MONTH, description: 'Total invoices processed by AP per month.', formula: 'User Input' },
+                        'Pages per Invoice': { value: PAGES_PER_INVOICE, description: 'Average number of pages per invoice document.', formula: 'User Input' },
+                        'Cost per Ream of Paper ($)': { value: COST_PER_REAM_PAPER, description: 'Cost of one ream (500 sheets) of paper.', formula: 'User Input' },
+                        'Month-End Close Days Saved': { value: MONTH_END_CLOSE_DAYS_SAVED, description: 'Number of days saved during month-end close process with Ottimate.', formula: 'User Input' },
+                        'Audit Hours Saved (Monthly)': { value: AUDIT_HOURS_MONTH_SAVED, description: 'Hours saved per month on audit preparation with Ottimate.', formula: 'User Input' },
+                        'Approval Minutes per Invoice Saved': { value: APPROVAL_MINUTES_PER_INVOICE_SAVED, description: 'Minutes saved per invoice during the approval process with Ottimate.', formula: 'User Input' },
+                        'Ottimate Monthly Cost ($)': { value: OTTIMATE_MONTHLY_COST, description: 'Monthly subscription cost for the Ottimate solution.', formula: 'User Input' },
+                        "Ottimate's Minutes per Invoice": { value: OTTIMATE_MINUTES_PER_INVOICE, description: 'Estimated time (in minutes) to process one invoice using Ottimate.', formula: 'User Input' }
+                    },
+                    'Constants': {
+                        'Weeks per Year': { value: 52, description: 'Fixed constant for weeks in a year.', formula: 'Constant' },
+                        'Months per Year': { value: 12, description: 'Fixed constant for months in a year.', formula: 'Constant' },
+                        'Hours per Week (Manager)': { value: 40, description: 'Fixed constant for hours worked per week by a manager.', formula: 'Constant' },
+                        'Days per Week': { value: 5, description: 'Fixed constant for working days in a week.', formula: 'Constant' },
+                        'Hours per Day': { value: 8, description: 'Fixed constant for working hours in a day.', formula: 'Constant' }
+                    }
+                };
+
+
+                // ------------------------------------------------------------------------------
+                // CONSTANTS: Fixed values for calculations
+                // ------------------------------------------------------------------------------
+                const WEEKS_PER_YEAR = 52;
+                const MONTHS_PER_YEAR = 12;
+                const HOURS_PER_WEEK_MANAGER = 40;
+                const DAYS_PER_WEEK = 5;
+                const HOURS_PER_DAY = 8;
+
+                // ------------------------------------------------------------------------------
+                // CALCULATE HARD COSTS (CURRENT): Labor costs before Ottimate
+                // ------------------------------------------------------------------------------
+                const current_annual_labor_cost = (NUM_EMPLOYEES_CURRENT * HOURS_PER_WEEK_AP * HOURLY_WAGE) * (1 + BENEFITS_RATE) * WEEKS_PER_YEAR;
+                calculationData['Current Costs'] = {
+                    'Current Annual Labor Cost': { value: current_annual_labor_cost, description: 'Total annual cost of your current AP team.', formula: '(NUM_EMPLOYEES_CURRENT × HOURS_PER_WEEK_AP × HOURLY_WAGE) × (1 + BENEFITS_RATE) × WEEKS_PER_YEAR' }
+                };
+
+
+                // ------------------------------------------------------------------------------
+                // CALCULATE DYNAMICALLY RETAINED EMPLOYEES:
+                // This is based on the new Ottimate efficiency per invoice.
+                // We calculate the total hours needed with Ottimate, then divide by individual employee capacity.
+                // Round up to ensure sufficient staffing.
+                // ------------------------------------------------------------------------------
+                let NUM_EMPLOYEES_RETAINED = 0;
+                if (HOURS_PER_WEEK_AP > 0) { // Prevent division by zero
+                    const total_ottimate_minutes_required_monthly = NUM_INVOICES_MONTH * OTTIMATE_MINUTES_PER_INVOICE;
+                    const total_ottimate_hours_required_monthly = total_ottimate_minutes_required_monthly / 60;
+                    const employee_hours_per_month = HOURS_PER_WEEK_AP * WEEKS_PER_YEAR / MONTHS_PER_YEAR; // Hours per employee per month
+                    NUM_EMPLOYEES_RETAINED = Math.ceil(total_ottimate_hours_required_monthly / employee_hours_per_month);
+                }
+                // Ensure at least 1 employee if invoices exist and hours per week AP is > 0, or 0 if no invoices
+                if (NUM_INVOICES_MONTH > 0 && NUM_EMPLOYEES_RETAINED === 0 && HOURS_PER_WEEK_AP > 0) {
+                    NUM_EMPLOYEES_RETAINED = 1;
+                } else if (NUM_INVOICES_MONTH === 0) {
+                    NUM_EMPLOYEES_RETAINED = 0;
+                }
+                calculationData['Ottimate Costs'] = {
+                    'Calculated Employees Retained': { value: NUM_EMPLOYEES_RETAINED, description: 'Estimated number of AP employees needed after implementing Ottimate.', formula: 'CEILING(((NUM_INVOICES_MONTH × OTTIMATE_MINUTES_PER_INVOICE) / 60) / (HOURS_PER_WEEK_AP × WEEKS_PER_YEAR / MONTHS_PER_YEAR))' }
+                };
+
+
+                // ------------------------------------------------------------------------------
+                // CALCULATE SOFT COSTS (CURRENT): Operational costs and potential savings areas
+                // Individual components for transparency
+                // ------------------------------------------------------------------------------
+                const paper_cost_annual = (NUM_INVOICES_MONTH * PAGES_PER_INVOICE / 500) * COST_PER_REAM_PAPER * MONTHS_PER_YEAR;
+                const manager_hourly_rate = MANAGER_SALARY_YEAR / WEEKS_PER_YEAR / HOURS_PER_WEEK_MANAGER;
+                const manager_hours_saved_month = MONTH_END_CLOSE_DAYS_SAVED * HOURS_PER_DAY;
+                const manager_savings_annual = NUM_MANAGERS * manager_hours_saved_month * manager_hourly_rate * MONTHS_PER_YEAR;
+                const retained_ap_hourly_rate_blended = HOURLY_WAGE * (1 + BENEFITS_RATE);
+                const retained_ap_hours_saved_month = MONTH_END_CLOSE_DAYS_SAVED * HOURS_PER_DAY;
+                const retained_ap_savings_annual = NUM_EMPLOYEES_RETAINED * retained_ap_hours_saved_month * retained_ap_hourly_rate_blended * MONTHS_PER_YEAR;
+                const approval_hours_saved_month = (NUM_INVOICES_MONTH * APPROVAL_MINUTES_PER_INVOICE_SAVED) / 60;
+                const approval_savings_annual = approval_hours_saved_month * retained_ap_hourly_rate_blended * MONTHS_PER_YEAR;
+                const audit_savings_annual = AUDIT_HOURS_MONTH_SAVED * retained_ap_hourly_rate_blended * MONTHS_PER_YEAR;
+
+                // Total Soft Cost Savings is the sum of these components
+                const soft_cost_savings = paper_cost_annual + manager_savings_annual + retained_ap_savings_annual + approval_savings_annual + audit_savings_annual;
+
+                // Store soft cost components for CSV
+                calculationData['Soft Cost Savings Components'] = {
+                    'Annual Paper Costs': { value: paper_cost_annual, description: 'Elimination of paper purchasing.', formula: '(NUM_INVOICES_MONTH × PAGES_PER_INVOICE / 500) × COST_PER_REAM_PAPER × MONTHS_PER_YEAR' },
+                    'Manager Month-End Close Savings': { value: manager_savings_annual, description: 'Time managers save during month-end close.', formula: 'NUM_MANAGERS × (MONTH_END_CLOSE_DAYS_SAVED × HOURS_PER_DAY) × (MANAGER_SALARY_YEAR / WEEKS_PER_YEAR / HOURS_PER_WEEK_MANAGER) × MONTHS_PER_YEAR' },
+                    'AP Team Month-End Close Savings': { value: retained_ap_savings_annual, description: 'Time retained AP employees save during month-end close.', formula: 'Calculated Employees Retained × (MONTH_END_CLOSE_DAYS_SAVED × HOURS_PER_DAY) × (HOURLY_WAGE × (1 + BENEFITS_RATE)) × MONTHS_PER_YEAR' },
+                    'Approval Time Savings': { value: approval_savings_annual, description: 'Time saved per invoice during the approval process.', formula: '((NUM_INVOICES_MONTH × APPROVAL_MINUTES_PER_INVOICE_SAVED) / 60) × (HOURLY_WAGE × (1 + BENEFITS_RATE)) × MONTHS_PER_YEAR' },
+                    'Audit Prep Savings': { value: audit_savings_annual, description: 'Hours saved monthly on preparing for audits.', formula: 'AUDIT_HOURS_MONTH_SAVED × (HOURLY_WAGE × (1 + BENEFITS_RATE)) × MONTHS_PER_YEAR' }
+                };
+
+
+                // Total Current Expenses is now just labor, as paper is moved to soft savings
+                const total_current_expenses = current_annual_labor_cost;
+                calculationData['Current Costs']['Total Current Annual Expenditure'] = { value: total_current_expenses, description: 'Sum of current labor costs before Ottimate. Annual Paper Costs are accounted for within Soft Cost Savings.', formula: 'Current Annual Labor Cost' };
+
+
+                // ------------------------------------------------------------------------------
+                // CALCULATE OTTIMATE SOLUTION COSTS: Costs after implementing Ottimate
+                // ------------------------------------------------------------------------------
+                const ottimate_annual_subscription = OTTIMATE_MONTHLY_COST * MONTHS_PER_YEAR;
+                const ottimate_annual_labor_cost = (NUM_EMPLOYEES_RETAINED * HOURS_PER_WEEK_AP * HOURLY_WAGE) * (1 + BENEFITS_RATE) * WEEKS_PER_YEAR;
+                const total_ottimate_cost = ottimate_annual_labor_cost + ottimate_annual_subscription;
+
+                // Store Ottimate costs for CSV
+                calculationData['Ottimate Costs']['Ottimate Annual Labor Cost'] = { value: ottimate_annual_labor_cost, description: 'Annual labor cost for the calculated reduced AP team after implementing Ottimate.', formula: '(Calculated Employees Retained × HOURS_PER_WEEK_AP × HOURLY_WAGE) × (1 + BENEFITS_RATE) × WEEKS_PER_YEAR' };
+                calculationData['Ottimate Costs']['Ottimate Annual Subscription'] = { value: ottimate_annual_subscription, description: 'Total yearly cost for the Ottimate software subscription.', formula: 'OTTIMATE_MONTHLY_COST × MONTHS_PER_YEAR' };
+                calculationData['Ottimate Costs']['Total Ottimate Annual Cost'] = { value: total_ottimate_cost, description: 'Combined annual cost of the retained AP team and the Ottimate subscription.', formula: 'Ottimate Annual Labor Cost + Ottimate Annual Subscription' };
+
+
+                // ------------------------------------------------------------------------------
+                // TOTAL SAVINGS: The core ROI calculations
+                // ------------------------------------------------------------------------------
+                const hard_cost_savings = current_annual_labor_cost - ottimate_annual_labor_cost;
+
+                // Corrected Total Annual Savings formula
+                const total_annual_savings = current_annual_labor_cost + soft_cost_savings - total_ottimate_cost;
+
+                const daily_hard_cost_of_inaction = (current_annual_labor_cost - ottimate_annual_labor_cost) / (WEEKS_PER_YEAR * DAYS_PER_WEEK);
+                const daily_total_cost_of_inaction = total_annual_savings / (WEEKS_PER_YEAR * DAYS_PER_WEEK);
+
+                // Store savings for CSV
+                calculationData['Savings'] = {
+                    'Hard Cost Savings (Headcount Reduction)': { value: hard_cost_savings, description: 'Savings achieved by reducing the number of AP employees based on Ottimate\'s efficiency.', formula: 'Current Annual Labor Cost - Ottimate Annual Labor Cost' },
+                    'Soft Cost Savings (Time & Supplies)': { value: soft_cost_savings, description: 'Savings from increased efficiency and reduced operational overhead.', formula: 'Annual Paper Costs + Manager Savings Annual + AP Team Month-End Close Savings + Approval Time Savings + Audit Prep Savings' },
+                    'Total Quantifiable Annual Savings (ROI)': { value: total_annual_savings, description: 'Overall annual financial benefit from implementing Ottimate, combining all hard and soft cost savings, minus the Ottimate subscription cost.', formula: 'Current Annual Labor Cost + Soft Cost Savings - Total Ottimate Annual Cost' },
+                    'Daily Hard Cost of Inaction (Labor)': { value: daily_hard_cost_of_inaction, description: 'Daily labor cost incurred by NOT implementing Ottimate.', formula: 'Hard Cost Savings / (WEEKS_PER_YEAR × DAYS_PER_WEEK)' },
+                    'Daily Total Cost of Inaction (Hard & Soft)': { value: daily_total_cost_of_inaction, description: 'Total daily cost incurred by NOT implementing Ottimate, including both labor and operational inefficiencies.', formula: 'Total Quantifiable Annual Savings / (WEEKS_PER_YEAR × DAYS_PER_WEEK)' }
+                };
+
+
+                // ------------------------------------------------------------------------------
+                // RESULTS: Display the calculated values
+                // ------------------------------------------------------------------------------
+                document.getElementById('currentAnnualLaborCost').textContent = formatCurrency(current_annual_labor_cost);
+                document.getElementById('totalCurrentExpenses').textContent = formatCurrency(total_current_expenses);
+                document.getElementById('numEmployeesRetainedDisplay').textContent = NUM_EMPLOYEES_RETAINED;
+                document.getElementById('ottimateAnnualLaborCost').textContent = formatCurrency(ottimate_annual_labor_cost);
+                document.getElementById('ottimateAnnualSubscription').textContent = formatCurrency(ottimate_annual_subscription);
+                document.getElementById('totalOttimateCost').textContent = formatCurrency(total_ottimate_cost);
+                document.getElementById('hardCostSavings').textContent = formatCurrency(hard_cost_savings);
+                document.getElementById('softCostSavings').textContent = formatCurrency(soft_cost_savings);
+                document.getElementById('totalAnnualSavings').textContent = formatCurrency(total_annual_savings);
+                document.getElementById('dailyHardCostOfInaction').textContent = formatCurrency(daily_hard_cost_of_inaction);
+                document.getElementById('dailyTotalCostOfInaction').textContent = formatCurrency(daily_total_cost_of_inaction);
+
+                // Display individual soft cost components
+                document.getElementById('subPaperCostAnnual').textContent = formatCurrency(paper_cost_annual);
+                document.getElementById('subManagerSavingsAnnual').textContent = formatCurrency(manager_savings_annual);
+                document.getElementById('subRetainedApSavingsAnnual').textContent = formatCurrency(retained_ap_savings_annual);
+                document.getElementById('subApprovalSavingsAnnual').textContent = formatCurrency(approval_savings_annual);
+                document.getElementById('subAuditSavingsAnnual').textContent = formatCurrency(audit_savings_annual);
+            }
+
+            // Function to download CSV
+            function downloadCsv() {
+                let csvContent = "Section,Item,Value,Formula,Description\n"; // CSV Header
+
+                for (const section in calculationData) {
+                    for (const item in calculationData[section]) {
+                        const data = calculationData[section][item];
+                        csvContent += `${escapeCsvField(section)},${escapeCsvField(item)},${escapeCsvField(data.value)},${escapeCsvField(data.formula)},${escapeCsvField(data.description)}\n`;
+                    }
+                }
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                if (link.download !== undefined) { // Feature detection for download attribute
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', 'ottimate_roi_calculation.csv');
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    // Fallback for browsers that don't support download attribute
+                    alert("Your browser does not support downloading files directly. Please copy the data manually.");
+                    // You could also open a new window with the CSV content here
+                }
+            }
+
+
+            // Initial calculation on page load with default values
+            calculateROI();
+
+            // Attach event listener to the buttons
+            calculateBtn.addEventListener('click', calculateROI);
+            downloadCsvBtn.addEventListener('click', downloadCsv); // Attach CSV download handler
+
+            // Also recalculate when input values change
+            const inputElements = document.querySelectorAll('input[type="number"]');
+            inputElements.forEach(input => {
+                input.addEventListener('input', calculateROI);
+            });
+
+            // Tooltip logic
+            const infoIcons = document.querySelectorAll('.info-icon');
+            infoIcons.forEach(icon => {
+                const tooltipContainer = icon.closest('.result-item') || icon.closest('.result-sub-item');
+                const tooltipContent = tooltipContainer.querySelector('.formula-tooltip');
+
+                icon.addEventListener('mouseover', () => {
+                    tooltipContent.textContent = icon.dataset.formula; // Get formula from data-formula attribute
+                    tooltipContent.style.display = 'block';
+                });
+
+                icon.addEventListener('mouseout', () => {
+                    tooltipContent.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
